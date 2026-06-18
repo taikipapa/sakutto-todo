@@ -1,5 +1,9 @@
 export const ALL_KEY = '__all__';
 
+// Initial number of categories a user can create before needing to watch a
+// rewarded ad for an extra slot.
+export const BASE_CATEGORY_LIMIT = 3;
+
 export const DEFAULT_CATEGORIES = [
   { id: 'work', label: '仕事', color: '#4A90D9' },
   { id: 'private', label: 'プライベート', color: '#E0719C' },

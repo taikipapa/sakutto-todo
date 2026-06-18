@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Alert, AppState, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,18 +15,31 @@ import EditTaskModal from './components/EditTaskModal';
 import SettingsModal from './components/SettingsModal';
 import TodayAchievementsScreen from './components/TodayAchievementsScreen';
 import TrashModal from './components/TrashModal';
-import { ALL_KEY } from './constants/categories';
+import {
+  canShowInterstitialNow,
+  initializeAds,
+  isRewardedAdAvailable,
+  showInterstitialIfReady,
+  showRewardedAd,
+} from './utils/ads';
+import { ALL_KEY, BASE_CATEGORY_LIMIT } from './constants/categories';
 import { DEFAULT_NOTIFICATION_SETTINGS } from './constants/notifications';
 import { isSameDay } from './utils/date';
 import { generateId } from './utils/id';
 import { syncNotifications } from './utils/notifications';
 import {
   loadCategories,
+  loadCategoryLimitBonus,
+  loadLastInterstitialShownAt,
   loadNotificationSettings,
+  loadTaskCompletionCount,
   loadTasks,
   loadTrash,
   saveCategories,
+  saveCategoryLimitBonus,
+  saveLastInterstitialShownAt,
   saveNotificationSettings,
+  saveTaskCompletionCount,
   saveTasks,
   saveTrash,
 } from './utils/storage';
@@ -48,12 +61,21 @@ function App() {
   const [completedCollapsed, setCompletedCollapsed] = useState(true);
 
   const [notificationSettings, setNotificationSettings] = useState(DEFAULT_NOTIFICATION_SETTINGS);
+  const [categoryLimitBonus, setCategoryLimitBonus] = useState(0);
+  const categoryLimit = BASE_CATEGORY_LIMIT + categoryLimitBonus;
+
+  // Ad bookkeeping that never drives a render - plain refs are enough.
+  const taskCompletionCountRef = useRef(0);
+  const lastInterstitialShownAtRef = useRef(0);
 
   const [editingTask, setEditingTask] = useState(null);
   const [addCategoryModalVisible, setAddCategoryModalVisible] = useState(false);
   const [trashModalVisible, setTrashModalVisible] = useState(false);
   const [achievementsVisible, setAchievementsVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
+
+  const anyModalOpen =
+    !!editingTask || addCategoryModalVisible || trashModalVisible || achievementsVisible || settingsVisible;
 
   const trophyRef = useRef(null);
   const [trophyPosition, setTrophyPosition] = useState({ x: 0, y: 0 });
@@ -74,24 +96,43 @@ function App() {
 
   useEffect(() => {
     (async () => {
-      const [storedCategories, storedTasks, storedTrash, storedNotificationSettings] = await Promise.all([
+      const [
+        storedCategories,
+        storedTasks,
+        storedTrash,
+        storedNotificationSettings,
+        storedCategoryLimitBonus,
+        storedTaskCompletionCount,
+        storedLastInterstitialShownAt,
+      ] = await Promise.all([
         loadCategories(),
         loadTasks(),
         loadTrash(),
         loadNotificationSettings(),
+        loadCategoryLimitBonus(),
+        loadTaskCompletionCount(),
+        loadLastInterstitialShownAt(),
       ]);
       setCategories(storedCategories);
       setTasks(storedTasks);
       setTrash(storedTrash);
       setNotificationSettings(storedNotificationSettings);
+      setCategoryLimitBonus(storedCategoryLimitBonus);
+      taskCompletionCountRef.current = storedTaskCompletionCount;
+      lastInterstitialShownAtRef.current = storedLastInterstitialShownAt;
       setAddCategoryId(storedCategories[0]?.id ?? null);
       setIsLoaded(true);
+      initializeAds();
     })();
   }, []);
 
   useEffect(() => {
     if (isLoaded) saveCategories(categories);
   }, [categories, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) saveCategoryLimitBonus(categoryLimitBonus);
+  }, [categoryLimitBonus, isLoaded]);
 
   useEffect(() => {
     if (isLoaded) saveTasks(tasks);
@@ -131,13 +172,34 @@ function App() {
   };
 
   const handleToggleComplete = (id) => {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+    const completing = !task.completed;
+
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === id
-          ? { ...t, completed: !t.completed, completedAt: !t.completed ? Date.now() : undefined }
-          : t
+        t.id === id ? { ...t, completed: completing, completedAt: completing ? Date.now() : undefined } : t
       )
     );
+
+    if (completing) {
+      taskCompletionCountRef.current += 1;
+      saveTaskCompletionCount(taskCompletionCountRef.current);
+
+      if (
+        canShowInterstitialNow({
+          completionCount: taskCompletionCountRef.current,
+          lastShownAt: lastInterstitialShownAtRef.current,
+          anyModalOpen,
+        })
+      ) {
+        const shown = showInterstitialIfReady();
+        if (shown) {
+          lastInterstitialShownAtRef.current = Date.now();
+          saveLastInterstitialShownAt(lastInterstitialShownAtRef.current);
+        }
+      }
+    }
   };
 
   const handleReorderActive = (reorderedVisible) => {
@@ -160,6 +222,33 @@ function App() {
   // Category management
   const handleAddCategory = ({ label, color }) => {
     setCategories((prev) => [...prev, { id: generateId(), label, color }]);
+  };
+
+  const handleWatchRewardedAdForCategorySlot = () => {
+    if (!isRewardedAdAvailable()) {
+      Alert.alert(
+        '広告を表示できません',
+        'この環境では広告を表示できません。development buildでお試しください。'
+      );
+      return;
+    }
+    showRewardedAd((earned) => {
+      if (earned) {
+        setCategoryLimitBonus((prev) => prev + 1);
+        setAddCategoryModalVisible(true);
+      }
+    });
+  };
+
+  const handleAddCategoryPress = () => {
+    if (categories.length < categoryLimit) {
+      setAddCategoryModalVisible(true);
+      return;
+    }
+    Alert.alert('カテゴリ枠の上限です', '広告を見てカテゴリ枠を1つ増やしますか？', [
+      { text: 'キャンセル', style: 'cancel' },
+      { text: '広告を見る', onPress: handleWatchRewardedAdForCategorySlot },
+    ]);
   };
 
   const handleReorderCategories = (newCategories) => {
@@ -241,7 +330,7 @@ function App() {
           onSelect={handleSelectTab}
           onReorder={handleReorderCategories}
           onDeleteCategory={handleDeleteCategory}
-          onAddPress={() => setAddCategoryModalVisible(true)}
+          onAddPress={handleAddCategoryPress}
         />
         <AddTaskBar
           categories={categories}
