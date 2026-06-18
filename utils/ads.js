@@ -18,13 +18,20 @@ const AD_REQUEST_OPTIONS = { requestNonPersonalizedAdsOnly: true };
 const INTERSTITIAL_EVERY_N_COMPLETIONS = 5;
 const INTERSTITIAL_COOLDOWN_MS = 5 * 60 * 1000;
 
+// 本番広告ユニットID（AdMobコンソールで確認して差し替えてください）
+const PROD_INTERSTITIAL_ID = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
+const PROD_REWARDED_ID     = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
+
+const INTERSTITIAL_UNIT_ID = __DEV__ ? (TestIds?.INTERSTITIAL ?? PROD_INTERSTITIAL_ID) : PROD_INTERSTITIAL_ID;
+const REWARDED_UNIT_ID     = __DEV__ ? (TestIds?.REWARDED     ?? PROD_REWARDED_ID)     : PROD_REWARDED_ID;
+
 let interstitial = null;
 let interstitialReady = false;
 
 function loadInterstitial() {
   if (!InterstitialAd) return;
   interstitialReady = false;
-  interstitial = InterstitialAd.createForAdRequest(TestIds.INTERSTITIAL, AD_REQUEST_OPTIONS);
+  interstitial = InterstitialAd.createForAdRequest(INTERSTITIAL_UNIT_ID, AD_REQUEST_OPTIONS);
   interstitial.addAdEventListener(AdEventType.LOADED, () => {
     interstitialReady = true;
   });
@@ -68,7 +75,7 @@ export function showRewardedAd(onEarned) {
     onEarned(false);
     return;
   }
-  const rewarded = RewardedAd.createForAdRequest(TestIds.REWARDED, AD_REQUEST_OPTIONS);
+  const rewarded = RewardedAd.createForAdRequest(REWARDED_UNIT_ID, AD_REQUEST_OPTIONS);
   let earned = false;
   let settled = false;
 

@@ -226,8 +226,8 @@ function App() {
   const handleWatchRewardedAdForCategorySlot = () => {
     if (!isRewardedAdAvailable()) {
       Alert.alert(
-        '広告を表示できません',
-        'この環境では広告を表示できません。development buildでお試しください。'
+        '広告を読み込めませんでした',
+        '現在広告を表示できません。しばらく経ってから再度お試しください。'
       );
       return;
     }

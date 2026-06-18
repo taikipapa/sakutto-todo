@@ -13,15 +13,17 @@ try {
   // Native module not available in this runtime (e.g. Expo Go) - use placeholder.
 }
 
-// Dummy/test ad unit ID published by Google for development use.
-const DUMMY_BANNER_ID = 'ca-app-pub-3940256099942544/6300978111';
+// 本番バナー広告ユニットID（AdMobコンソールで確認して差し替えてください）
+const PROD_BANNER_ID = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
+
+const BANNER_UNIT_ID = __DEV__ ? (TestIds?.BANNER ?? PROD_BANNER_ID) : PROD_BANNER_ID;
 
 export default function AdBanner() {
   if (BannerAd) {
     return (
       <View style={styles.container}>
         <BannerAd
-          unitId={TestIds?.BANNER ?? DUMMY_BANNER_ID}
+          unitId={BANNER_UNIT_ID}
           size={BannerAdSize.BANNER}
           requestOptions={{ requestNonPersonalizedAdsOnly: true }}
         />

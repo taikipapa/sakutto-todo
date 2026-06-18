@@ -26,6 +26,13 @@
 - Expo
 - JavaScript
 
-## 開発状況
+## プライバシーポリシー
 
-現在はストア公開に向けて開発中です。
+Google Play提出には公開URLが必要です。
+`privacy-policy.html` をGitHub PagesやGoogle Sitesなどで公開し、そのURLをGoogle Play Consoleの「アプリのコンテンツ」→「プライバシーポリシー」に登録してください。
+
+## 広告
+
+- バナー広告（画面下部）
+- インタースティシャル広告（タスク5件完了ごと・5分間隔）
+- リワード広告（カテゴリ枠を増やす時に視聴）
