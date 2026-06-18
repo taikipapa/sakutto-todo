@@ -14,7 +14,7 @@ try {
 }
 
 // 本番バナー広告ユニットID（AdMobコンソールで確認して差し替えてください）
-const PROD_BANNER_ID = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
+const PROD_BANNER_ID = 'ca-app-pub-2833241675946579/8413315825';
 
 const BANNER_UNIT_ID = __DEV__ ? (TestIds?.BANNER ?? PROD_BANNER_ID) : PROD_BANNER_ID;
 
