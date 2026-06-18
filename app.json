@@ -16,6 +16,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.taikipapa.sakuttotodo",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -35,6 +36,12 @@
       ],
       "expo-font",
       "expo-notifications"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "241a4554-da99-4ee4-9bb7-40d308fe41d9"
+      }
+    },
+    "owner": "daitaina"
   }
 }
