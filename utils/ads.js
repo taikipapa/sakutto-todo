@@ -70,11 +70,21 @@ export function showRewardedAd(onEarned) {
   }
   const rewarded = RewardedAd.createForAdRequest(TestIds.REWARDED, AD_REQUEST_OPTIONS);
   let earned = false;
-  rewarded.addAdEventListener(AdEventType.LOADED, () => rewarded.show());
+  let settled = false;
+
+  function settle(value) {
+    if (settled) return;
+    settled = true;
+    onEarned(value);
+  }
+
+  rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
+    rewarded.show().catch(() => settle(false));
+  });
   rewarded.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
     earned = true;
   });
-  rewarded.addAdEventListener(AdEventType.CLOSED, () => onEarned(earned));
-  rewarded.addAdEventListener(AdEventType.ERROR, () => onEarned(false));
+  rewarded.addAdEventListener(AdEventType.CLOSED, () => settle(earned));
+  rewarded.addAdEventListener(AdEventType.ERROR, () => settle(false));
   rewarded.load();
 }

@@ -1,22 +1,24 @@
 import { useState } from 'react';
-import { Modal, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
+  runOnJS,
   useAnimatedStyle,
   useFrameCallback,
   useSharedValue,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { getCategory } from '../constants/categories';
 import AdBanner from './AdBanner';
 
 const CARD_WIDTH = 150;
 const CARD_HEIGHT = 64;
 
-function FloatingCard({ task, category, bounds }) {
+function FloatingCard({ task, category, bounds, onRestoreTask }) {
   const maxX = Math.max(bounds.width - CARD_WIDTH, 0);
   const maxY = Math.max(bounds.height - CARD_HEIGHT, 0);
 
@@ -50,8 +52,11 @@ function FloatingCard({ task, category, bounds }) {
     y.value = ny;
   });
 
+  const notifyRestore = () => onRestoreTask(task);
+
   const tap = Gesture.Tap().onEnd(() => {
     scale.value = withSequence(withTiming(1.18, { duration: 130 }), withTiming(1, { duration: 130 }));
+    runOnJS(notifyRestore)();
   });
 
   const style = useAnimatedStyle(() => ({
@@ -69,14 +74,15 @@ function FloatingCard({ task, category, bounds }) {
   );
 }
 
-export default function TodayAchievementsScreen({ visible, tasks, categories, onClose }) {
+export default function TodayAchievementsScreen({ visible, tasks, categories, onClose, onRestoreTask }) {
   const [bounds, setBounds] = useState({ width: 0, height: 0 });
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <GestureHandlerRootView style={styles.flex}>
+        <SafeAreaProvider>
         <LinearGradient colors={['#FDC830', '#F37335']} style={styles.flex}>
-          <SafeAreaView style={styles.flex}>
+          <SafeAreaView style={styles.flex} edges={['top', 'left', 'right']}>
             <View style={styles.header}>
               <Text style={styles.title}>
                 {tasks.length > 0
@@ -101,6 +107,7 @@ export default function TodayAchievementsScreen({ visible, tasks, categories, on
                     task={task}
                     category={getCategory(categories, task.categoryId)}
                     bounds={bounds}
+                    onRestoreTask={onRestoreTask}
                   />
                 ))}
             </View>
@@ -108,6 +115,7 @@ export default function TodayAchievementsScreen({ visible, tasks, categories, on
             <AdBanner />
           </SafeAreaView>
         </LinearGradient>
+        </SafeAreaProvider>
       </GestureHandlerRootView>
     </Modal>
   );

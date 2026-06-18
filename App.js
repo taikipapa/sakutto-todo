@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Alert, AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
@@ -10,7 +11,6 @@ import AddCategoryModal from './components/AddCategoryModal';
 import AddTaskBar from './components/AddTaskBar';
 import AdBanner from './components/AdBanner';
 import CategoryTabs from './components/CategoryTabs';
-import CompletedSection from './components/CompletedSection';
 import EditTaskModal from './components/EditTaskModal';
 import SettingsModal from './components/SettingsModal';
 import TodayAchievementsScreen from './components/TodayAchievementsScreen';
@@ -58,7 +58,6 @@ function App() {
 
   const [filter, setFilter] = useState(ALL_KEY);
   const [addCategoryId, setAddCategoryId] = useState(null);
-  const [completedCollapsed, setCompletedCollapsed] = useState(true);
 
   const [notificationSettings, setNotificationSettings] = useState(DEFAULT_NOTIFICATION_SETTINGS);
   const [categoryLimitBonus, setCategoryLimitBonus] = useState(0);
@@ -282,19 +281,32 @@ function App() {
     setTrash([]);
   };
 
+  const handleRestoreFromAchievements = (task) => {
+    Alert.alert('Todoをリストに戻す', 'このTodoをリストに戻しますか？', [
+      { text: 'キャンセル', style: 'cancel' },
+      {
+        text: '戻す',
+        onPress: () => {
+          setTasks((prev) => [
+            { id: generateId(), text: task.text, categoryId: task.categoryId, completed: false },
+            ...prev,
+          ]);
+        },
+      },
+    ]);
+  };
+
   const activeVisible = tasks.filter(
     (t) => !t.completed && (filter === ALL_KEY || t.categoryId === filter)
-  );
-  const completedVisible = tasks.filter(
-    (t) => t.completed && (filter === ALL_KEY || t.categoryId === filter)
   );
   const todayCompleted = tasks.filter((t) => t.completed && isSameDay(t.completedAt));
 
   if (!isLoaded) return null;
 
   return (
+    <SafeAreaProvider>
     <GestureHandlerRootView style={styles.flex}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <StatusBar style="dark" />
 
         <View style={styles.header}>
@@ -349,18 +361,6 @@ function App() {
           onReorder={handleReorderActive}
         />
 
-        <CompletedSection
-          tasks={completedVisible}
-          categories={categories}
-          trophyPosition={trophyPosition}
-          collapsed={completedCollapsed}
-          onToggleCollapsed={() => setCompletedCollapsed((c) => !c)}
-          onToggleComplete={handleToggleComplete}
-          onOpenEdit={handleOpenEdit}
-          onDelete={handleDeleteSingle}
-          onTrophyArrive={triggerTrophyBounce}
-        />
-
         <AdBanner />
       </SafeAreaView>
 
@@ -392,6 +392,7 @@ function App() {
         tasks={todayCompleted}
         categories={categories}
         onClose={() => setAchievementsVisible(false)}
+        onRestoreTask={handleRestoreFromAchievements}
       />
 
       <SettingsModal
@@ -401,6 +402,7 @@ function App() {
         onChange={setNotificationSettings}
       />
     </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 
