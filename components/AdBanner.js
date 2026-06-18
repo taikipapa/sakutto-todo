@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 // react-native-google-mobile-ads requires a custom dev client / native build
 // (it does not run inside Expo Go). We require it lazily and fall back to a
@@ -13,17 +13,23 @@ try {
   // Native module not available in this runtime (e.g. Expo Go) - use placeholder.
 }
 
+// Dummy/test ad unit ID published by Google for development use.
+const DUMMY_BANNER_ID = 'ca-app-pub-3940256099942544/6300978111';
 // 本番バナー広告ユニットID（AdMobコンソールで確認して差し替えてください）
-const PROD_BANNER_ID = 'ca-app-pub-2833241675946579/8413315825';
+const PROD_ANDROID_BANNER_ID = 'ca-app-pub-2833241675946579/8413315825';
+const PROD_IOS_BANNER_ID = 'ca-app-pub-2833241675946579/7156950187';
 
-const BANNER_UNIT_ID = __DEV__ ? (TestIds?.BANNER ?? PROD_BANNER_ID) : PROD_BANNER_ID;
+function getBannerAdUnitId() {
+  if (__DEV__) return TestIds?.BANNER ?? DUMMY_BANNER_ID;
+  return Platform.OS === 'ios' ? PROD_IOS_BANNER_ID : PROD_ANDROID_BANNER_ID;
+}
 
 export default function AdBanner() {
   if (BannerAd) {
     return (
       <View style={styles.container}>
         <BannerAd
-          unitId={BANNER_UNIT_ID}
+          unitId={getBannerAdUnitId()}
           size={BannerAdSize.BANNER}
           requestOptions={{ requestNonPersonalizedAdsOnly: true }}
         />

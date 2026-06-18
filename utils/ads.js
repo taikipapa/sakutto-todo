@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 // react-native-google-mobile-ads requires a custom dev client / native build
 // (it does not run inside Expo Go). We require it lazily and fall back to
 // no-ops everywhere so the app keeps working in Expo Go.
@@ -19,11 +21,20 @@ const INTERSTITIAL_EVERY_N_COMPLETIONS = 5;
 const INTERSTITIAL_COOLDOWN_MS = 5 * 60 * 1000;
 
 // 本番広告ユニットID（AdMobコンソールで確認して差し替えてください）
-const PROD_INTERSTITIAL_ID = 'ca-app-pub-2833241675946579/9615592560';
-const PROD_REWARDED_ID     = 'ca-app-pub-2833241675946579/6071099228';
+const PROD_ANDROID_INTERSTITIAL_ID = 'ca-app-pub-2833241675946579/9615592560';
+const PROD_ANDROID_REWARDED_ID = 'ca-app-pub-2833241675946579/6071099228';
+const PROD_IOS_INTERSTITIAL_ID = 'ca-app-pub-2833241675946579/5874782399';
+const PROD_IOS_REWARDED_ID = 'ca-app-pub-2833241675946579/9818772547';
 
-const INTERSTITIAL_UNIT_ID = __DEV__ ? (TestIds?.INTERSTITIAL ?? PROD_INTERSTITIAL_ID) : PROD_INTERSTITIAL_ID;
-const REWARDED_UNIT_ID     = __DEV__ ? (TestIds?.REWARDED     ?? PROD_REWARDED_ID)     : PROD_REWARDED_ID;
+function getInterstitialAdUnitId() {
+  if (__DEV__) return TestIds?.INTERSTITIAL;
+  return Platform.OS === 'ios' ? PROD_IOS_INTERSTITIAL_ID : PROD_ANDROID_INTERSTITIAL_ID;
+}
+
+function getRewardedAdUnitId() {
+  if (__DEV__) return TestIds?.REWARDED;
+  return Platform.OS === 'ios' ? PROD_IOS_REWARDED_ID : PROD_ANDROID_REWARDED_ID;
+}
 
 let interstitial = null;
 let interstitialReady = false;
@@ -31,7 +42,7 @@ let interstitialReady = false;
 function loadInterstitial() {
   if (!InterstitialAd) return;
   interstitialReady = false;
-  interstitial = InterstitialAd.createForAdRequest(INTERSTITIAL_UNIT_ID, AD_REQUEST_OPTIONS);
+  interstitial = InterstitialAd.createForAdRequest(getInterstitialAdUnitId(), AD_REQUEST_OPTIONS);
   interstitial.addAdEventListener(AdEventType.LOADED, () => {
     interstitialReady = true;
   });
@@ -75,7 +86,7 @@ export function showRewardedAd(onEarned) {
     onEarned(false);
     return;
   }
-  const rewarded = RewardedAd.createForAdRequest(REWARDED_UNIT_ID, AD_REQUEST_OPTIONS);
+  const rewarded = RewardedAd.createForAdRequest(getRewardedAdUnitId(), AD_REQUEST_OPTIONS);
   let earned = false;
   let settled = false;
 
