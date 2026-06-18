@@ -43,23 +43,25 @@ export default function SettingsModal({ visible, settings, onClose, onChange }) 
             <Switch value={settings.enabled} onValueChange={handleToggleEnabled} />
           </View>
 
-          <View style={[styles.row, !settings.enabled && styles.rowDisabled]}>
-            <Text style={styles.rowLabel}>昨日の達成数通知の時刻</Text>
+          <View style={[styles.row, styles.timeRow, !settings.enabled && styles.rowDisabled]}>
+            <Text style={styles.rowLabel}>昨日のサクッと報告</Text>
             <View style={styles.timeStepper}>
               <View style={styles.stepperColumn}>
                 <Pressable
+                  style={styles.stepperButton}
                   disabled={!settings.enabled}
                   onPress={() => changeHour(1)}
                   hitSlop={8}
                 >
-                  <Ionicons name="chevron-up" size={16} color={settings.enabled ? '#4A90D9' : '#CCC'} />
+                  <Ionicons name="chevron-up" size={20} color={settings.enabled ? '#4A90D9' : '#CCC'} />
                 </Pressable>
                 <Pressable
+                  style={styles.stepperButton}
                   disabled={!settings.enabled}
                   onPress={() => changeHour(-1)}
                   hitSlop={8}
                 >
-                  <Ionicons name="chevron-down" size={16} color={settings.enabled ? '#4A90D9' : '#CCC'} />
+                  <Ionicons name="chevron-down" size={20} color={settings.enabled ? '#4A90D9' : '#CCC'} />
                 </Pressable>
               </View>
               <Text style={styles.timeText}>
@@ -67,18 +69,20 @@ export default function SettingsModal({ visible, settings, onClose, onChange }) 
               </Text>
               <View style={styles.stepperColumn}>
                 <Pressable
+                  style={styles.stepperButton}
                   disabled={!settings.enabled}
                   onPress={() => changeMinute(5)}
                   hitSlop={8}
                 >
-                  <Ionicons name="chevron-up" size={16} color={settings.enabled ? '#4A90D9' : '#CCC'} />
+                  <Ionicons name="chevron-up" size={20} color={settings.enabled ? '#4A90D9' : '#CCC'} />
                 </Pressable>
                 <Pressable
+                  style={styles.stepperButton}
                   disabled={!settings.enabled}
                   onPress={() => changeMinute(-5)}
                   hitSlop={8}
                 >
-                  <Ionicons name="chevron-down" size={16} color={settings.enabled ? '#4A90D9' : '#CCC'} />
+                  <Ionicons name="chevron-down" size={20} color={settings.enabled ? '#4A90D9' : '#CCC'} />
                 </Pressable>
               </View>
             </View>
@@ -113,7 +117,9 @@ const styles = StyleSheet.create({
     width: '85%',
     backgroundColor: '#fff',
     borderRadius: 14,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
   },
   title: {
     fontSize: 16,
@@ -129,6 +135,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#EEEFF1',
   },
+  timeRow: {
+    paddingVertical: 18,
+  },
   rowDisabled: {
     opacity: 0.5,
   },
@@ -141,10 +150,14 @@ const styles = StyleSheet.create({
   timeStepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 10,
   },
   stepperColumn: {
-    gap: 2,
+    gap: 4,
+  },
+  stepperButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 6,
   },
   timeText: {
     fontSize: 16,
