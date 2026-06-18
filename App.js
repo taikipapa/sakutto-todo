@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -121,6 +122,9 @@ function App() {
       lastInterstitialShownAtRef.current = storedLastInterstitialShownAt;
       setAddCategoryId(storedCategories[0]?.id ?? null);
       setIsLoaded(true);
+      if (Platform.OS === 'ios') {
+        await requestTrackingPermissionsAsync();
+      }
       initializeAds();
     })();
   }, []);
