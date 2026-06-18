@@ -49,13 +49,12 @@ async function scheduleAchievementNotification(tasks, hour, minute) {
   await Notifications.cancelScheduledNotificationAsync(ACHIEVEMENT_ID).catch(() => {});
   const fireDate = getNextOccurrence(hour, minute);
   const count = countCompletedOnDayBefore(tasks, fireDate);
-  const body =
-    count > 0
-      ? `昨日は${count}件のタスクを完了しました🎉`
-      : '昨日は完了したタスクがありませんでした。今日はがんばりましょう！';
+  const title =
+    count > 0 ? `昨日は${count}件のタスクを達成しました！` : '昨日は完了したタスクがありませんでした';
+  const body = count > 0 ? '今日もサクッと片付けましょう。' : '今日はがんばりましょう！';
   await Notifications.scheduleNotificationAsync({
     identifier: ACHIEVEMENT_ID,
-    content: { title: 'Todo', body },
+    content: { title, body },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
   });
 }
