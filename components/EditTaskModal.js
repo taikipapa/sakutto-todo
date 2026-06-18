@@ -51,6 +51,7 @@ export default function EditTaskModal({ visible, task, categories, onClose, onSa
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
             style={styles.categoryRow}
           >
             {categories.map((c) => {
