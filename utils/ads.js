@@ -55,7 +55,15 @@ function loadInterstitial() {
 
 export function initializeAds() {
   if (!MobileAds) return;
-  MobileAds().initialize().catch(() => {});
+  MobileAds()
+    .setRequestConfiguration({
+      testDeviceIdentifiers: ['343028fd0f245fea35071537fc27cdca'],
+    })
+    .then(() => {
+      console.log('[Ads] testDeviceIdentifiers set');
+      return MobileAds().initialize();
+    })
+    .catch(() => {});
   loadInterstitial();
 }
 
