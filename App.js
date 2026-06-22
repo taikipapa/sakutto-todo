@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
+import { Alert, AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +19,7 @@ import {
   canShowInterstitialNow,
   initializeAds,
   isRewardedAdAvailable,
+  markAdsReady,
   showInterstitialIfReady,
   showRewardedAd,
 } from './utils/ads';
@@ -28,6 +28,7 @@ import { DEFAULT_NOTIFICATION_SETTINGS } from './constants/notifications';
 import { isSameDay } from './utils/date';
 import { generateId } from './utils/id';
 import { syncNotifications } from './utils/notifications';
+import { ensureTrackingPermission } from './utils/tracking';
 import {
   loadCategories,
   loadCategoryLimitBonus,
@@ -62,6 +63,9 @@ function App() {
 
   const [notificationSettings, setNotificationSettings] = useState(DEFAULT_NOTIFICATION_SETTINGS);
   const [categoryLimitBonus, setCategoryLimitBonus] = useState(0);
+  // Gates AdMob init/load/show. iOS flips this only after ATT is resolved;
+  // Android flips it immediately. See utils/tracking.js for the iOS flow.
+  const [adsReady, setAdsReady] = useState(false);
   const categoryLimit = BASE_CATEGORY_LIMIT + categoryLimitBonus;
 
   // Ad bookkeeping that never drives a render - plain refs are enough.
@@ -122,10 +126,13 @@ function App() {
       lastInterstitialShownAtRef.current = storedLastInterstitialShownAt;
       setAddCategoryId(storedCategories[0]?.id ?? null);
       setIsLoaded(true);
-      if (Platform.OS === 'ios') {
-        await requestTrackingPermissionsAsync();
-      }
+
+      // ATT must be resolved (and AdMob must stay untouched) before any ad
+      // init/load/show happens. On Android there is no ATT step.
+      await ensureTrackingPermission();
+      markAdsReady(true);
       initializeAds();
+      setAdsReady(true);
     })();
   }, []);
 
@@ -190,6 +197,7 @@ function App() {
       saveTaskCompletionCount(taskCompletionCountRef.current);
 
       if (
+        adsReady &&
         canShowInterstitialNow({
           completionCount: taskCompletionCountRef.current,
           lastShownAt: lastInterstitialShownAtRef.current,
@@ -228,7 +236,7 @@ function App() {
   };
 
   const handleWatchRewardedAdForCategorySlot = () => {
-    if (!isRewardedAdAvailable()) {
+    if (!adsReady || !isRewardedAdAvailable()) {
       Alert.alert(
         '広告を読み込めませんでした',
         '現在広告を表示できません。しばらく経ってから再度お試しください。'
@@ -365,7 +373,7 @@ function App() {
           onReorder={handleReorderActive}
         />
 
-        <AdBanner />
+        <AdBanner ready={adsReady} />
       </SafeAreaView>
 
       <AddCategoryModal

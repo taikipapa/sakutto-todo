@@ -39,8 +39,21 @@ function getRewardedAdUnitId() {
 let interstitial = null;
 let interstitialReady = false;
 
+// Structural gate: nothing in this module may init/load/show an ad until the
+// app has confirmed ATT is settled (iOS) or this is Android. Set via
+// markAdsReady() once that decision is known.
+let adsReady = false;
+
+export function markAdsReady(value) {
+  adsReady = value;
+}
+
+export function isAdsReady() {
+  return adsReady;
+}
+
 function loadInterstitial() {
-  if (!InterstitialAd) return;
+  if (!adsReady || !InterstitialAd) return;
   interstitialReady = false;
   interstitial = InterstitialAd.createForAdRequest(getInterstitialAdUnitId(), AD_REQUEST_OPTIONS);
   interstitial.addAdEventListener(AdEventType.LOADED, () => {
@@ -54,7 +67,7 @@ function loadInterstitial() {
 }
 
 export function initializeAds() {
-  if (!MobileAds) return;
+  if (!adsReady || !MobileAds) return;
   MobileAds()
     .setRequestConfiguration({
       testDeviceIdentifiers: ['343028fd0f245fea35071537fc27cdca'],
@@ -72,6 +85,7 @@ export function isInterstitialCandidate(completionCount) {
 }
 
 export function canShowInterstitialNow({ completionCount, lastShownAt, anyModalOpen }) {
+  if (!adsReady) return false;
   if (anyModalOpen) return false;
   if (!isInterstitialCandidate(completionCount)) return false;
   if (lastShownAt && Date.now() - lastShownAt < INTERSTITIAL_COOLDOWN_MS) return false;
@@ -79,18 +93,18 @@ export function canShowInterstitialNow({ completionCount, lastShownAt, anyModalO
 }
 
 export function showInterstitialIfReady() {
-  if (!InterstitialAd || !interstitial || !interstitialReady) return false;
+  if (!adsReady || !InterstitialAd || !interstitial || !interstitialReady) return false;
   interstitialReady = false;
   interstitial.show();
   return true;
 }
 
 export function isRewardedAdAvailable() {
-  return !!RewardedAd;
+  return adsReady && !!RewardedAd;
 }
 
 export function showRewardedAd(onEarned) {
-  if (!RewardedAd) {
+  if (!adsReady || !RewardedAd) {
     onEarned(false);
     return;
   }

@@ -24,8 +24,8 @@ function getBannerAdUnitId() {
   return Platform.OS === 'ios' ? PROD_IOS_BANNER_ID : PROD_ANDROID_BANNER_ID;
 }
 
-export default function AdBanner() {
-  if (BannerAd) {
+export default function AdBanner({ ready }) {
+  if (ready && BannerAd) {
     return (
       <View style={styles.container}>
         <BannerAd
